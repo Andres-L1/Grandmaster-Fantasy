@@ -1,0 +1,1 @@
+import{Z as u,_,ar as o,z as t,a2 as g,a9 as p,an as i,a7 as l,a1 as n,a8 as m}from"./DM83Yp_6.js";function E(r,d){let a=null,f=t;var s;if(t){a=m;for(var e=g(document.head);e!==null&&(e.nodeType!==p||e.data!==r);)e=i(e);if(e===null)l(!1);else{var y=i(e);e.remove(),n(y)}}t||(s=document.head.appendChild(u()));try{_(()=>d(s),o)}finally{f&&(l(!0),n(a))}}export{E as h};
