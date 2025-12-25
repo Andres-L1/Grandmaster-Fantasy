@@ -96,6 +96,11 @@
 						>Equipo</a
 					>
 					<a
+						href="{base}/competition"
+						class="text-sm font-medium text-amber-500 hover:text-amber-400 transition-colors"
+						>Competición</a
+					>
+					<a
 						href="{base}/stats"
 						class="text-sm font-medium text-slate-400 hover:text-white transition-colors"
 						>Stats</a
