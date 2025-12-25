@@ -18,8 +18,6 @@
 
 <div class="min-h-screen relative bg-slate-950 text-white">
 	<Toast />
-	<!-- Onboarding can stay, but might need text updates later -->
-	<OnboardingWizard />
 
 	<!-- Simple Clean Header -->
 	<nav

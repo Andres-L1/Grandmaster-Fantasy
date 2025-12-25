@@ -96,17 +96,34 @@
 
     <!-- Player Image (Line Art Style) -->
     <div
-        class="absolute inset-0 flex items-center justify-center top-6 z-0 pointer-events-none overflow-hidden"
+        class="absolute inset-0 flex items-center justify-center top-4 z-0 pointer-events-none overflow-hidden group-hover:scale-105 transition-transform duration-500"
     >
-        <!-- We use a CSS filter to simulate the 'outline sketch' look -->
-        <img
-            src={player.photoUrl ||
-                `https://ui-avatars.com/api/?name=${player.name}&background=random&size=200`}
-            alt={player.name}
-            class="w-[90%] h-[90%] object-cover object-top transition-all duration-500 filter grayscale contrast-[1.5] brightness-125 group-hover:scale-110"
-            style="mask-image: linear-gradient(to bottom, black 80%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%); mix-blend-mode: luminosity;"
-        />
-        <!-- Outline effect overlay (optional trick: duplicate image with slight offset or border detection filter in CSS is hard, sticking to high contrast B&W) -->
+        {#if player.photoUrl}
+            <img
+                src={player.photoUrl}
+                alt={player.name}
+                class="w-[90%] h-[90%] object-cover object-top transition-all duration-500 filter grayscale contrast-[1.5] brightness-125"
+                style="mask-image: linear-gradient(to bottom, black 80%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);"
+            />
+        {:else}
+            <!-- Fallback: Generated Contour Silhouette (SVG) -->
+            <!-- This mimics a 'drawing' using stroke-only SVG -->
+            <svg
+                viewBox="0 0 24 24"
+                class="w-[70%] h-[70%] stroke-white/80 fill-transparent stroke-[0.8] drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] opacity-80"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                />
+            </svg>
+            <!-- Decorative 'Chess' elements -->
+            <div
+                class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-50"
+            ></div>
+        {/if}
     </div>
 
     <!-- Footer: Name & Username -->
