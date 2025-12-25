@@ -194,11 +194,6 @@
                             >
                                 {player.name}
                             </div>
-                            <div
-                                class="text-[10px] text-slate-700 font-mono mt-1"
-                            >
-                                #{player.position}
-                            </div>
                         </div>
                     {/if}
                 </div>
