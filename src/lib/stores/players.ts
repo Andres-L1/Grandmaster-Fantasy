@@ -4,6 +4,11 @@ import { storageService } from './localStorage';
 import { browser } from '$app/environment';
 import { user } from './user';
 
+// Extended Player interface with Clause data
+export interface OwnedPlayer extends Player {
+    clause: number;
+}
+
 // Store for all available players from Lichess API
 const availablePlayersStore = writable<Player[]>([]);
 
@@ -20,6 +25,36 @@ if (browser) {
         playersLoading.set(false);
     });
 }
+
+// Store for player clauses
+function createPlayerClausesStore() {
+    const initialClauses = browser ? storageService.getPlayerClauses() : {};
+    const { subscribe, set, update } = writable<Record<string, number>>(initialClauses);
+
+    return {
+        subscribe,
+        setClause: (playerId: string, amount: number) => {
+            update(clauses => {
+                const newClauses = { ...clauses, [playerId]: amount };
+                if (browser) storageService.savePlayerClauses(newClauses);
+                return newClauses;
+            });
+        },
+        removeClause: (playerId: string) => {
+            update(clauses => {
+                const { [playerId]: _, ...rest } = clauses;
+                if (browser) storageService.savePlayerClauses(rest);
+                return rest;
+            });
+        },
+        reset: () => {
+            set({});
+            if (browser) storageService.savePlayerClauses({});
+        }
+    };
+}
+
+export const playerClauses = createPlayerClausesStore();
 
 // Create writable store for owned player IDs
 function createOwnedPlayersStore() {
@@ -63,6 +98,9 @@ function createOwnedPlayersStore() {
                 const newIds = [...ownedIds, playerId];
                 if (browser) storageService.saveOwnedPlayerIds(newIds);
 
+                // Set initial clause equal to price
+                playerClauses.setClause(playerId, price);
+
                 result = { success: true, message: `${player.name} fichado exitosamente` };
                 return newIds;
             });
@@ -93,26 +131,60 @@ function createOwnedPlayersStore() {
                 const newIds = ownedIds.filter(id => id !== playerId);
                 if (browser) storageService.saveOwnedPlayerIds(newIds);
 
+                // Remove clause
+                playerClauses.removeClause(playerId);
+
                 result = { success: true, message: `${player.name} vendido por ${(refund / 1000000).toFixed(0)}M` };
                 return newIds;
             });
 
             return result;
         },
+        increaseClause: (playerId: string, newClause: number): { success: boolean; message: string } => {
+            const clauses = get(playerClauses);
+            const currentClause = clauses[playerId] || 0;
+
+            if (newClause <= currentClause) {
+                return { success: false, message: 'La nueva cláusula debe ser mayor que la actual' };
+            }
+
+            // Cost is 10% of the increase
+            const increaseAmount = newClause - currentClause;
+            const cost = Math.floor(increaseAmount * 0.10);
+
+            const currentUser = get(user);
+            if (currentUser.budget < cost) {
+                return { success: false, message: `Necesitas ${(cost / 1000000).toFixed(1)}M para blindar (10% del aumento)` };
+            }
+
+            // Pay cost
+            user.updateBudget(-cost);
+
+            // Update clause
+            playerClauses.setClause(playerId, newClause);
+
+            return { success: true, message: `Cláusula aumentada a ${(newClause / 1000000).toFixed(0)}M` };
+        },
         reset: () => {
             set([]);
             if (browser) storageService.saveOwnedPlayerIds([]);
+            playerClauses.reset();
         }
     };
 }
 
 export const ownedPlayerIds = createOwnedPlayersStore();
 
-// Derived store for owned player objects
+// Derived store for owned player objects WITH CLAUSE included
 export const ownedPlayers = derived(
-    [ownedPlayerIds, availablePlayersStore],
-    ([$ownedIds, $allPlayers]) => {
-        return $allPlayers.filter(p => $ownedIds.includes(p.id));
+    [ownedPlayerIds, availablePlayersStore, playerClauses],
+    ([$ownedIds, $allPlayers, $clauses]) => {
+        return $allPlayers
+            .filter(p => $ownedIds.includes(p.id))
+            .map(p => ({
+                ...p,
+                clause: $clauses[p.id] || p.price
+            }));
     }
 );
 
