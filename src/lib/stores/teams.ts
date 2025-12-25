@@ -5,7 +5,7 @@ import { ownedPlayerIds } from './players';
 import { get } from 'svelte/store';
 import { allPlayers } from './players';
 
-// Create writable store for current team lineup (max 5 players)
+// Create writable store for current team lineup (max 3 players)
 function createCurrentTeamStore() {
     const initialTeam = browser ? storageService.getCurrentTeam() : [];
     const { subscribe, set, update } = writable<string[]>(initialTeam);
@@ -24,8 +24,8 @@ function createCurrentTeamStore() {
                 }
 
                 // Check team size
-                if (team.length >= 5) {
-                    result = { success: false, message: 'Equipo completo (máximo 5 jugadores)' };
+                if (team.length >= 3) {
+                    result = { success: false, message: 'Equipo completo (máximo 3 jugadores)' };
                     return team;
                 }
 
@@ -60,7 +60,7 @@ function createCurrentTeamStore() {
             });
         },
         setTeam: (playerIds: string[]) => {
-            const newTeam = playerIds.slice(0, 5);
+            const newTeam = playerIds.slice(0, 3);
             set(newTeam);
             if (browser) storageService.saveCurrentTeam(newTeam);
         },
@@ -105,7 +105,7 @@ export const captain = createCaptainStore();
 export const teamSize = derived(currentTeam, ($team) => $team.length);
 
 // Derived store to check if team is full
-export const isTeamFull = derived(teamSize, ($size) => $size >= 5);
+export const isTeamFull = derived(teamSize, ($size) => $size >= 3);
 
 // Derived store for team players (full objects)
 export const teamPlayers = derived(

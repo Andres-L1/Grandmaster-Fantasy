@@ -65,7 +65,7 @@ class LocalStorageService {
         localStorage.setItem(STORAGE_KEYS.PLAYER_CLAUSES, JSON.stringify(clauses));
     }
 
-    // Get current team lineup (max 5 players)
+    // Get current team lineup (max 3 players)
     getCurrentTeam(): string[] {
         const data = localStorage.getItem(STORAGE_KEYS.CURRENT_TEAM);
         return data ? JSON.parse(data) : [];
@@ -73,7 +73,7 @@ class LocalStorageService {
 
     // Save current team lineup
     saveCurrentTeam(playerIds: string[]): void {
-        localStorage.setItem(STORAGE_KEYS.CURRENT_TEAM, JSON.stringify(playerIds.slice(0, 5)));
+        localStorage.setItem(STORAGE_KEYS.CURRENT_TEAM, JSON.stringify(playerIds.slice(0, 3)));
     }
 
     // Get captain ID

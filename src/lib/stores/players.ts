@@ -17,7 +17,7 @@ export const playersLoading = writable<boolean>(true);
 
 // Initialize players from Lichess API
 if (browser) {
-    lichessApi.getTopPlayers(50).then(players => {
+    lichessApi.getTopPlayers(500).then(players => {
         availablePlayersStore.set(players);
         playersLoading.set(false);
     }).catch(err => {
