@@ -9,6 +9,7 @@ export interface PackConfig {
     cardCount: number;
     description: string;
     probabilities: {
+        goat: number;      // 2700+ (New top tier)
         legendary: number; // 2660+
         epic: number;      // 2655-2659
         rare: number;      // 2650-2654
@@ -24,7 +25,7 @@ export const PACKS: Record<PackType, PackConfig> = {
         price: 0,
         cardCount: 3,
         description: 'Tu primer paso hacia la gloria. Incluye una lección sobre duplicados.',
-        probabilities: { legendary: 0, epic: 0, rare: 0, common: 1 }, // Fixed logic override
+        probabilities: { goat: 0, legendary: 0, epic: 0, rare: 0, common: 1 },
         image: '🎁'
     },
     PAWN: {
@@ -33,7 +34,8 @@ export const PACKS: Record<PackType, PackConfig> = {
         price: 100,
         cardCount: 3,
         description: '3 Cartas. Ideal para empezar.',
-        probabilities: { legendary: 0.05, epic: 0.15, rare: 0.30, common: 0.50 },
+        // Very low chance for top tiers
+        probabilities: { goat: 0.001, legendary: 0.01, epic: 0.09, rare: 0.30, common: 0.60 },
         image: '♟️'
     },
     KNIGHT: {
@@ -42,7 +44,8 @@ export const PACKS: Record<PackType, PackConfig> = {
         price: 500,
         cardCount: 5,
         description: '5 Cartas. Mejores opciones.',
-        probabilities: { legendary: 0.10, epic: 0.25, rare: 0.40, common: 0.25 },
+        // Decent chance for Epic/Legendary
+        probabilities: { goat: 0.01, legendary: 0.05, epic: 0.25, rare: 0.40, common: 0.29 },
         image: '♞'
     },
     KING: {
@@ -50,8 +53,9 @@ export const PACKS: Record<PackType, PackConfig> = {
         name: 'Sobre Rey',
         price: 2000,
         cardCount: 10,
-        description: '10 Cartas para la élite.',
-        probabilities: { legendary: 0.25, epic: 0.35, rare: 0.30, common: 0.10 },
+        description: '10 Cartas. La verdadera élite.',
+        // Guaranteed quality, good shot at GOAT
+        probabilities: { goat: 0.05, legendary: 0.20, epic: 0.40, rare: 0.25, common: 0.10 },
         image: '♚'
     }
 };
@@ -67,25 +71,30 @@ export class PackService {
 
         // Categorize players (Adjusted for 81-100 Rankings)
         const pools = {
-            legendary: allPlayers.filter(p => p.rating >= 2660),
+            goat: allPlayers.filter(p => p.rating >= 2700),
+            legendary: allPlayers.filter(p => p.rating >= 2660 && p.rating < 2700),
             epic: allPlayers.filter(p => p.rating >= 2655 && p.rating < 2660),
             rare: allPlayers.filter(p => p.rating >= 2650 && p.rating < 2655),
             common: allPlayers.filter(p => p.rating < 2650)
         };
 
-        // Fallback checks
+        // Fallback checks to prevent empty pool crashes (cascade down)
+        if (pools.goat.length === 0) pools.goat = pools.legendary;
         if (pools.legendary.length === 0) pools.legendary = pools.epic;
         if (pools.epic.length === 0) pools.epic = pools.rare;
+        if (pools.rare.length === 0) pools.rare = pools.common;
 
         for (let i = 0; i < config.cardCount; i++) {
             const rand = Math.random();
             let selectedPool: Player[] = [];
 
-            if (rand < config.probabilities.legendary) {
+            if (rand < config.probabilities.goat) {
+                selectedPool = pools.goat;
+            } else if (rand < config.probabilities.goat + config.probabilities.legendary) {
                 selectedPool = pools.legendary;
-            } else if (rand < config.probabilities.legendary + config.probabilities.epic) {
+            } else if (rand < config.probabilities.goat + config.probabilities.legendary + config.probabilities.epic) {
                 selectedPool = pools.epic;
-            } else if (rand < config.probabilities.legendary + config.probabilities.epic + config.probabilities.rare) {
+            } else if (rand < config.probabilities.goat + config.probabilities.legendary + config.probabilities.epic + config.probabilities.rare) {
                 selectedPool = pools.rare;
             } else {
                 selectedPool = pools.common;
@@ -95,6 +104,7 @@ export class PackService {
                 const randomCard = selectedPool[Math.floor(Math.random() * selectedPool.length)];
                 cards.push(randomCard);
             } else {
+                // Ultimate fallback
                 cards.push(allPlayers[Math.floor(Math.random() * allPlayers.length)]);
             }
         }
@@ -106,17 +116,21 @@ export class PackService {
     private openStarterPack(allPlayers: Player[]): Player[] {
         const cards: Player[] = [];
 
-        // Pick 2 different random players
-        const p1 = allPlayers[Math.floor(Math.random() * allPlayers.length)];
-        let p2 = allPlayers[Math.floor(Math.random() * allPlayers.length)];
+        // Pick 2 different random players (prefer lower rating for starter)
+        // Filter valid starter pool (exclude GOATs to avoid giving free top tier)
+        const starters = allPlayers.filter(p => p.rating < 2660);
+        const pool = starters.length > 2 ? starters : allPlayers;
+
+        const p1 = pool[Math.floor(Math.random() * pool.length)];
+        let p2 = pool[Math.floor(Math.random() * pool.length)];
         while (p2.id === p1.id) {
-            p2 = allPlayers[Math.floor(Math.random() * allPlayers.length)];
+            p2 = pool[Math.floor(Math.random() * pool.length)];
         }
 
         // Add p1, p2, and p1 again (Duplicate!)
         cards.push(p1);
         cards.push(p2);
-        cards.push(p1); // Intentionally adding p1 again to force duplicate logic
+        cards.push(p1);
 
         return cards;
     }

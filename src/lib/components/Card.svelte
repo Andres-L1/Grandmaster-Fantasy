@@ -17,28 +17,31 @@
         border: string;
         bg: string;
     } {
+        // GOAT TIER (2700+) -> Solid Gold / Premium
         if (rating >= 2700)
             return {
                 type: "GOAT",
-                color: "text-yellow-300",
-                border: "border-yellow-400",
-                bg: "bg-gradient-to-br from-yellow-900 via-amber-600 to-yellow-900",
+                color: "text-yellow-200",
+                border: "border-yellow-400 border-4", // Thick border
+                bg: "bg-gradient-to-b from-yellow-700 via-amber-500 to-yellow-900 shadow-[0_0_20px_rgba(234,179,8,0.3)]",
             };
-        // Adjusted thresholds for the current 81-100 pool (Top being ~2661)
+        // LEGENDARY TIER (2660-2699) -> Red / Dark Orange
         if (rating >= 2660)
             return {
-                type: "LEGENDAY",
+                type: "LEGENDARY",
                 color: "text-orange-400",
                 border: "border-orange-500",
-                bg: "bg-gradient-to-br from-orange-950 via-orange-900 to-red-950",
+                bg: "bg-gradient-to-br from-orange-950 via-red-900 to-black",
             };
+        // EPIC TIER (2655-2659) -> Purple
         if (rating >= 2655)
             return {
                 type: "EPIC",
                 color: "text-purple-400",
                 border: "border-purple-500",
-                bg: "bg-gradient-to-br from-purple-950 via-fuchsia-900 to-slate-900",
+                bg: "bg-gradient-to-br from-purple-950 via-slate-900 to-black",
             };
+        // RARE TIER (2650-2654) -> Blue
         if (rating >= 2650)
             return {
                 type: "RARE",
@@ -46,6 +49,7 @@
                 border: "border-blue-500",
                 bg: "bg-gradient-to-br from-blue-950 to-slate-900",
             };
+        // COMMON TIER (<2650) -> Grey/Slate
         return {
             type: "COMMON",
             color: "text-slate-400",
