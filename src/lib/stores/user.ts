@@ -14,6 +14,7 @@ function createUserStore() {
 
     return {
         subscribe,
+        update, // Expose update for custom updates
         addCoins: (amount: number) => {
             update(user => {
                 const newUser = { ...user, coins: user.coins + amount };
@@ -49,7 +50,7 @@ function createUserStore() {
             });
         },
         reset: () => {
-            const defaultUser = { username: 'Rookie Collector', coins: 1000, seenOnboarding: false };
+            const defaultUser = { username: 'Rookie Collector', coins: 0, seenOnboarding: false, lastDailyPackClaim: 0 };
             set(defaultUser);
             if (browser) {
                 storageService.resetAll();

@@ -8,13 +8,15 @@ export interface User {
     username: string;
     coins: number;
     seenOnboarding: boolean;
+    lastDailyPackClaim?: number; // Timestamp of last daily pack claim
 }
 
 // Default user data
 const DEFAULT_USER: User = {
     username: 'Rookie Collector',
     coins: 0, // Starts at 0 to force selling the starter pack duplicate
-    seenOnboarding: false
+    seenOnboarding: false,
+    lastDailyPackClaim: 0 // Never claimed
 };
 
 class LocalStorageService {

@@ -11,19 +11,73 @@
     import Card from "$lib/components/Card.svelte";
     import confetti from "canvas-confetti";
     import { onMount } from "svelte";
+    import { storageService, type User } from "$lib/stores/localStorage";
 
     // State
-    let isOpening = false;
-    let openedCards: { card: Player; isNew: boolean }[] = [];
-    let showResultModal = false;
-    let isStarter = false;
-    let duplicateSold = false;
+    let isOpening = $state(false);
+    let openedCards: { card: Player; isNew: boolean }[] = $state([]);
+    let showResultModal = $state(false);
+    let isStarter = $state(false);
+    let duplicateSold = $state(false);
+    let dailyPackAvailable = $state(false);
+    let timeUntilNextDaily = $state("");
+
+    // Check daily pack availability
+    function updateDailyPackStatus() {
+        const lastClaim = $user.lastDailyPackClaim || 0;
+        const now = Date.now();
+        const timeSinceLast = now - lastClaim;
+        const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+        if (timeSinceLast >= TWENTY_FOUR_HOURS) {
+            dailyPackAvailable = true;
+            timeUntilNextDaily = "";
+        } else {
+            dailyPackAvailable = false;
+            const remaining = TWENTY_FOUR_HOURS - timeSinceLast;
+            const hours = Math.floor(remaining / (60 * 60 * 1000));
+            const minutes = Math.floor(
+                (remaining % (60 * 60 * 1000)) / (60 * 1000),
+            );
+            timeUntilNextDaily = `${hours}h ${minutes}m`;
+        }
+    }
+
+    function claimDailyPack() {
+        if (!dailyPackAvailable) return;
+
+        // Update last claim time - need to save to storage
+        user.update((u: User) => {
+            const updated = { ...u, lastDailyPackClaim: Date.now() };
+            if (typeof window !== "undefined") {
+                storageService.saveUser(updated);
+            }
+            return updated;
+        });
+
+        isOpening = true;
+        isStarter = false;
+        toast.success("¡Sobre Diario Reclamado!");
+
+        setTimeout(() => {
+            const cards = packService.openPack("PAWN", $allPlayers);
+            processOpenedCards(cards);
+            updateDailyPackStatus();
+        }, 1000);
+    }
 
     onMount(() => {
         // Auto-open starter pack if collection is empty
         if ($collectionIds.length === 0) {
             triggerStarterPack();
         }
+
+        // Initialize daily pack status
+        updateDailyPackStatus();
+
+        // Update countdown every minute
+        const interval = setInterval(updateDailyPackStatus, 60000);
+        return () => clearInterval(interval);
     });
 
     function triggerStarterPack() {
@@ -119,6 +173,70 @@
             Usa tus monedas para adquirir nuevos sobres y completar tu colección
             de leyendas.
         </p>
+    </div>
+
+    <!-- Daily Free Pack Section -->
+    <div class="relative">
+        <button
+            class="w-full group relative flex flex-col md:flex-row items-center justify-between p-6 rounded-2xl border-2 transition-all {dailyPackAvailable
+                ? 'border-green-500 bg-gradient-to-r from-green-900/40 via-emerald-900/40 to-green-900/40 hover:shadow-2xl hover:shadow-green-500/20 hover:-translate-y-1'
+                : 'border-slate-700 bg-gradient-to-r from-slate-800 to-slate-900 cursor-not-allowed opacity-75'}"
+            onclick={claimDailyPack}
+            disabled={!dailyPackAvailable || isOpening}
+        >
+            <!-- Icon & Title -->
+            <div class="flex items-center gap-4">
+                <div
+                    class="text-6xl {dailyPackAvailable
+                        ? 'animate-bounce'
+                        : ''}"
+                >
+                    🎁
+                </div>
+                <div class="text-left">
+                    <h3
+                        class="text-2xl font-bold font-serif {dailyPackAvailable
+                            ? 'text-green-400'
+                            : 'text-slate-400'}"
+                    >
+                        Sobre Diario Gratis
+                    </h3>
+                    <p
+                        class="text-sm {dailyPackAvailable
+                            ? 'text-green-300'
+                            : 'text-slate-500'}"
+                    >
+                        {#if dailyPackAvailable}
+                            ¡Disponible ahora! Haz clic para reclamar
+                        {:else}
+                            Próximo sobre en: {timeUntilNextDaily}
+                        {/if}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Badge -->
+            {#if dailyPackAvailable}
+                <div
+                    class="bg-green-500 text-black font-black px-6 py-3 rounded-full text-lg shadow-lg shadow-green-500/30 animate-pulse"
+                >
+                    ¡GRATIS!
+                </div>
+            {:else}
+                <div
+                    class="bg-slate-700 text-slate-400 font-bold px-6 py-3 rounded-full text-sm"
+                >
+                    🕐 {timeUntilNextDaily}
+                </div>
+            {/if}
+
+            <!-- Glow effect when available -->
+            {#if dailyPackAvailable}
+                <div
+                    class="absolute inset-0 bg-green-500/10 rounded-2xl animate-pulse pointer-events-none"
+                ></div>
+            {/if}
+        </button>
     </div>
 
     <!-- Packs Grid -->

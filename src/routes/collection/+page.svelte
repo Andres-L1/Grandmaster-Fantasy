@@ -55,28 +55,28 @@
     );
 
     function sellDuplicate(player: any) {
-        // Since we simplified store to just IDs, we don't have "duplicate count" yet.
-        // But we added "removeCard" for quicksell.
-        // For now, let's allow selling ANY card (removing it from collection) for coins?
-        // Or if we strictly follow "Collection Album" usually you can't sell your *last* copy unless you want to lose it.
-        // Let's implement "Sell" = "Remove from collection + Gain Coins".
+        // Base sell prices (50% of original value)
+        let basePrice = 10;
+        if (player.rating >= 2700) basePrice = 500;
+        else if (player.rating >= 2660) basePrice = 250;
+        else if (player.rating >= 2655) basePrice = 50;
+        else if (player.rating >= 2650) basePrice = 25;
 
-        // Calculate sell price based on rating (simplified)
-        // Calculate sell price based on rarity
-        let sellPrice = 20;
-        if (player.rating >= 2700) sellPrice = 1000;
-        else if (player.rating >= 2660) sellPrice = 500;
-        else if (player.rating >= 2655) sellPrice = 100;
-        else if (player.rating >= 2650) sellPrice = 50;
+        // Check if this is the last copy
+        const copies = $collectionIds.filter((id) => id === player.id).length;
+        const isLastCopy = copies === 1;
 
-        if (
-            confirm(
-                `¿Vender a ${player.name} por ${sellPrice} monedas? (Desaparecerá de tu colección)`,
-            )
-        ) {
+        // If it's the last copy, apply 75% penalty (25% of base price)
+        let finalPrice = isLastCopy ? Math.floor(basePrice * 0.25) : basePrice;
+
+        const warningMsg = isLastCopy
+            ? `⚠️ ÚLTIMA CARTA: Solo recibirás ${finalPrice} monedas (25% del valor). ¿Seguro que quieres vender a ${player.name}?`
+            : `¿Vender a ${player.name} por ${finalPrice} monedas?`;
+
+        if (confirm(warningMsg)) {
             collectionIds.removeCard(player.id);
-            user.addCoins(sellPrice);
-            toast.success(`Vendido ${player.name} por ${sellPrice} monedas.`);
+            user.addCoins(finalPrice);
+            toast.success(`Vendido ${player.name} por ${finalPrice} monedas.`);
         }
     }
 </script>
