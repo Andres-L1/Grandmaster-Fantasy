@@ -245,4 +245,5 @@
     confirmText={`Vender por ${sellPrice} 🪙`}
     cancelText="Cancelar"
     onConfirm={confirmSell}
+    onCancel={() => {}}
 />
