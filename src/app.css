@@ -1,96 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
 	:root {
-		/* Chess-themed professional palette */
-		--color-primary: 46 125 50;
-		/* Forest Green #2E7D32 */
-		--color-secondary: 21 101 192;
-		/* Deep Blue #1565C0 */
-		--color-accent: 255 160 0;
-		/* Amber #FFA000 */
+		/* Premium Fantasy Palette */
+		/* Dark Navy - Background */
+		--color-background: 2 6 23;
+		/* #020617 Slate 950 */
 
-		--color-background: 10 25 41;
-		/* Dark blue-gray #0A1929 */
-		--color-surface: 26 35 50;
-		/* Slightly lighter #1A2332 */
-		--color-surface-elevated: 33 45 63;
-		/* #212D3F */
+		/* Deep Blue/Black - Surface */
+		--color-surface: 15 23 42;
+		/* #0F172A Slate 900 */
 
-		--color-text: 227 242 253;
-		/* Light blue-white #E3F2FD */
-		--color-text-secondary: 176 190 197;
-		/* #B0BEC5 */
-		--color-text-muted: 120 144 156;
-		/* #78909C */
+		/* Gold - Primary Accent (Value, Calls to Action) */
+		--color-primary: 212 175 55;
+		/* #D4AF37 Metallic Gold */
 
-		--color-success: 102 187 106;
-		/* #66BB6A */
-		--color-warning: 255 183 77;
-		/* #FFB74D */
-		--color-error: 239 83 80;
-		/* #EF5350 */
+		/* Emerald - Success/Positive */
+		--color-success: 16 185 129;
+		/* #10B981 Emerald 500 */
 
-		--color-border: 55 71 79;
-		/* #37474F */
+		/* Red - Danger/Negative */
+		--color-error: 239 68 68;
+		/* #EF4444 Red 500 */
+
+		/* Text Colors */
+		--color-text-primary: 248 250 252;
+		/* #F8FAFC Slate 50 */
+		--color-text-secondary: 148 163 184;
+		/* #94A3B8 Slate 400 */
+		--color-text-muted: 100 116 139;
+		/* #64748B Slate 500 */
+
+		/* BORDERS */
+		--color-border: 51 65 85;
+		/* #334155 Slate 700 */
 	}
 
 	body {
-		@apply bg-slate-950 text-slate-50;
-		background: rgb(var(--color-background));
-		color: rgb(var(--color-text));
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+		@apply bg-slate-950 text-slate-50 antialiased;
+		background-color: rgb(var(--color-background));
+		color: rgb(var(--color-text-primary));
+		font-family: 'Inter', sans-serif;
+		background-image:
+			radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.5) 0%, rgba(2, 6, 23, 0) 50%);
+		min-height: 100vh;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: 'Playfair Display', serif;
+		letter-spacing: -0.025em;
 	}
 }
 
 @layer components {
 
-	/* Primary Button */
+	/* Primary Button (Gold Gradient) */
 	.btn-primary {
-		@apply bg-green-700 hover:bg-green-800 text-white font-medium px-4 py-2 rounded-lg transition;
-		background: rgb(var(--color-primary));
+		@apply relative overflow-hidden font-bold px-6 py-2.5 rounded-lg transition-all transform hover:-translate-y-0.5 shadow-lg active:translate-y-0;
+		background: linear-gradient(135deg, #ECC94B 0%, #D69E2E 100%);
+		color: #1a202c;
+		text-transform: uppercase;
+		font-size: 0.875rem;
+		letter-spacing: 0.05em;
 	}
 
-	.btn-primary:hover {
-		background: rgb(43 115 46);
+	.btn-primary:disabled {
+		@apply opacity-50 cursor-not-allowed transform-none hover:translate-y-0;
+		background: #4a5568 !important;
+		color: #a0aec0;
 	}
 
-	/* Secondary Button */
-	.btn-secondary {
-		@apply bg-blue-700 hover:bg-blue-800 text-white font-medium px-4 py-2 rounded-lg transition;
-		background: rgb(var(--color-secondary));
+	.btn-primary:hover:not(:disabled) {
+		box-shadow: 0 4px 6px -1px rgba(214, 158, 46, 0.4), 0 2px 4px -1px rgba(214, 158, 46, 0.2);
 	}
 
-	/* Success Button */
-	.btn-success {
-		background: rgb(var(--color-success));
-		@apply hover:bg-green-600 text-white font-medium px-4 py-2 rounded-lg transition;
-	}
-
-	/* Danger Button */
+	/* Danger Button (Subtle Red) */
 	.btn-danger {
-		background: rgb(var(--color-error));
-		@apply hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg transition;
+		@apply px-4 py-2 rounded-lg font-medium transition-colors text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300;
 	}
 
-	/* Card */
+	/* Glass Card */
 	.card {
-		background: rgb(var(--color-surface));
-		border: 1px solid rgb(var(--color-border) / 0.3);
-		@apply rounded-lg p-4;
+		@apply rounded-xl backdrop-blur-md relative overflow-hidden;
+		background: rgba(15, 23, 42, 0.6);
+		border: 1px solid rgba(148, 163, 184, 0.1);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	}
+
+	.card::before {
+		content: '';
+		@apply absolute inset-0 pointer-events-none;
+		background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
 	}
 
 	/* Input */
 	.input {
-		background: rgb(var(--color-surface-elevated));
-		border: 1px solid rgb(var(--color-border) / 0.5);
-		color: rgb(var(--color-text));
-		@apply px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600;
+		@apply w-full px-4 py-2.5 rounded-lg bg-slate-900/50 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition-all;
 	}
 
 	.input:focus {
-		border-color: rgb(var(--color-primary));
+		box-shadow: 0 0 0 1px rgba(214, 158, 46, 0.2);
 	}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #334155;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #475569;
 }

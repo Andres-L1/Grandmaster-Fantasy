@@ -5,15 +5,13 @@
 	import { ownedPlayers, ownedPlayerIds } from "$lib/stores/players";
 	import { onMount } from "svelte";
 	import { get } from "svelte/store";
+	import { toast } from "$lib/stores/toast";
 	import Modal from "$lib/components/Modal.svelte";
+	import Toast from "$lib/components/Toast.svelte";
+	import OnboardingWizard from "$lib/components/OnboardingWizard.svelte";
 
 	let { children } = $props();
 	let showRules = $state(false);
-	let marketEvent = $state<{
-		title: string;
-		message: string;
-		type: "info" | "warning" | "error";
-	} | null>(null);
 
 	function formatBudget(budget: number): string {
 		return `${(budget / 1000000).toFixed(0)}M`;
@@ -48,38 +46,40 @@
 			const extra = targetPlayer.clause - standardRefund;
 			user.updateBudget(extra);
 
-			marketEvent = {
-				title: "¡CLAUSULAZO!",
-				message: `El equipo "Magnus Carlsen Academy" ha pagado la cláusula de ${targetPlayer.name} (${formatBudget(targetPlayer.clause)}). ¡Has perdido al jugador pero recibido el dinero!`,
-				type: "error",
-			};
+			// Use Toast instead of Modal for cleaner flow
+			toast.error(
+				`¡CLAUSULAZO! Te han robado a ${targetPlayer.name} por ${formatBudget(targetPlayer.clause)}`,
+				6000,
+			);
 		} else {
 			// Just a notification of interest
-			marketEvent = {
-				title: "Rumores de Mercado",
-				message: `Se rumorea que hay interés en ${targetPlayer.name}. Han ofrecido ${formatBudget(offer)} pero tu cláusula de ${formatBudget(targetPlayer.clause)} lo ha protegido.`,
-				type: "info",
-			};
+			toast.info(
+				`Rumor: Oferta de ${formatBudget(offer)} por ${targetPlayer.name} rechazada.`,
+				5000,
+			);
 		}
 	}
 </script>
 
-<div class="min-h-screen" style="background: rgb(10, 25, 41);">
+<div class="min-h-screen relative">
+	<Toast />
+	<OnboardingWizard />
+
 	<!-- Simple Clean Header -->
 	<nav
-		class="border-b"
-		style="background: rgba(26, 35, 50, 0.95); backdrop-filter: blur(8px); border-color: rgba(55, 71, 79, 0.3);"
+		class="border-b border-white/5 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50"
 	>
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex justify-between items-center h-16">
 				<!-- Logo/Brand -->
 				<a
 					href="{base}/"
-					class="text-xl font-semibold flex items-center gap-2"
-					style="color: rgb(227, 242, 253);"
+					class="text-xl font-bold font-serif flex items-center gap-2 text-white hover:text-primary transition-colors"
 				>
-					<span class="text-2xl">♔</span>
-					<span class="hidden sm:inline">Grandmaster Fantasy</span>
+					<span class="text-2xl text-primary">♔</span>
+					<span class="hidden sm:inline tracking-tight"
+						>Grandmaster Fantasy</span
+					>
 					<span class="sm:hidden">GF</span>
 				</a>
 
@@ -87,36 +87,32 @@
 				<div class="flex items-center gap-4 sm:gap-6">
 					<a
 						href="{base}/market"
-						class="text-sm font-medium hover:text-white transition"
-						style="color: rgb(176, 190, 197);">Mercado</a
+						class="text-sm font-medium text-slate-400 hover:text-white transition-colors"
+						>Mercado</a
 					>
 					<a
 						href="{base}/my-team"
-						class="text-sm font-medium hover:text-white transition"
-						style="color: rgb(176, 190, 197);">Equipo</a
+						class="text-sm font-medium text-slate-400 hover:text-white transition-colors"
+						>Equipo</a
 					>
 					<a
 						href="{base}/stats"
-						class="text-sm font-medium hover:text-white transition"
-						style="color: rgb(176, 190, 197);">Stats</a
+						class="text-sm font-medium text-slate-400 hover:text-white transition-colors"
+						>Stats</a
 					>
 					<button
 						onclick={() => (showRules = true)}
-						class="text-sm font-medium hover:text-amber-400 transition"
-						style="color: rgb(120, 144, 156);"
+						class="text-sm font-medium text-slate-400 hover:text-primary transition-colors"
 					>
 						Reglas
 					</button>
 
 					<!-- Budget Badge -->
 					<div
-						class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg"
-						style="background: rgba(255, 160, 0, 0.1); border: 1px solid rgba(255, 160, 0, 0.3);"
+						class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20"
 					>
 						<span class="text-lg">💰</span>
-						<span
-							class="font-semibold text-sm"
-							style="color: rgb(255, 160, 0);"
+						<span class="font-bold text-sm text-primary"
 							>{formatBudget($user.budget)}</span
 						>
 					</div>
@@ -126,7 +122,7 @@
 	</nav>
 
 	<!-- Main Content -->
-	<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+	<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
 		{@render children()}
 	</main>
 </div>
@@ -138,40 +134,48 @@
 	onClose={() => (showRules = false)}
 >
 	<div
-		class="space-y-6 text-sm text-gray-300 max-h-[70vh] overflow-y-auto pr-2"
+		class="space-y-6 text-sm text-slate-300 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar"
 	>
 		<section>
-			<h3 class="text-white font-bold mb-2">💰 Mercado y Fichajes</h3>
-			<ul class="list-disc pl-4 space-y-1">
-				<li>Tienes un presupuesto inicial de <strong>100M</strong>.</li>
+			<h3 class="text-white font-serif font-bold text-lg mb-2">
+				💰 Mercado y Fichajes
+			</h3>
+			<ul class="list-disc pl-4 space-y-2 text-slate-400">
+				<li>
+					Tienes un presupuesto inicial de <strong
+						class="text-primary">100M</strong
+					>.
+				</li>
 				<li>
 					Puedes tener hasta <strong>15 jugadores</strong> en tu plantilla.
 				</li>
 				<li>
-					Al vender un jugador, recuperas el <strong>80%</strong> de su
-					valor actual.
+					Al vender un jugador, recuperas el <strong
+						class="text-white">80%</strong
+					> de su valor actual.
 				</li>
 			</ul>
 		</section>
 
 		<section>
-			<h3 class="text-amber-400 font-bold mb-2">
+			<h3 class="text-primary font-serif font-bold text-lg mb-2">
 				🛡️ Cláusulas de Rescisión
 			</h3>
-			<div class="bg-amber-900/20 p-3 rounded border border-amber-500/20">
-				<p class="mb-2">
+			<div class="bg-slate-800/50 p-4 rounded-lg border border-white/5">
+				<p class="mb-3 text-slate-300">
 					Cada jugador tiene una cláusula. Si es baja, ¡te lo pueden
 					robar!
 				</p>
-				<ul class="list-disc pl-4 space-y-1">
+				<ul class="list-disc pl-4 space-y-1 text-slate-400">
 					<li>La cláusula inicial es igual al precio de compra.</li>
 					<li>
-						Puedes <strong>aumentar la cláusula</strong> de cualquier
-						jugador.
+						Puedes <strong class="text-white"
+							>aumentar la cláusula</strong
+						> de cualquier jugador.
 					</li>
 					<li>
 						El coste de aumentar la cláusula es el <strong
-							>10%</strong
+							class="text-red-400">10%</strong
 						> de la diferencia.
 					</li>
 					<li><em>Ejemplo: Subir de 10M a 20M cuesta 1M.</em></li>
@@ -180,48 +184,46 @@
 		</section>
 
 		<section>
-			<h3 class="text-green-400 font-bold mb-2">🏆 Puntuación</h3>
-			<div class="grid grid-cols-2 gap-2 text-center text-xs">
-				<div class="bg-white/5 p-2 rounded">
-					<div class="text-green-400 font-bold text-lg">+10</div>
-					<div>Victoria</div>
+			<h3 class="text-success font-serif font-bold text-lg mb-2">
+				🏆 Puntuación
+			</h3>
+			<div class="grid grid-cols-2 gap-3 text-center text-xs">
+				<div
+					class="bg-slate-800/50 p-3 rounded-lg border border-white/5"
+				>
+					<div class="text-success font-bold text-xl">+10</div>
+					<div class="uppercase tracking-wider text-[10px] mt-1">
+						Victoria
+					</div>
 				</div>
-				<div class="bg-white/5 p-2 rounded">
-					<div class="text-yellow-400 font-bold text-lg">+3</div>
-					<div>Tablas</div>
+				<div
+					class="bg-slate-800/50 p-3 rounded-lg border border-white/5"
+				>
+					<div class="text-amber-400 font-bold text-xl">+3</div>
+					<div class="uppercase tracking-wider text-[10px] mt-1">
+						Tablas
+					</div>
 				</div>
-				<div class="bg-white/5 p-2 rounded">
-					<div class="text-red-400 font-bold text-lg">-2</div>
-					<div>Derrota</div>
+				<div
+					class="bg-slate-800/50 p-3 rounded-lg border border-white/5"
+				>
+					<div class="text-red-400 font-bold text-xl">-2</div>
+					<div class="uppercase tracking-wider text-[10px] mt-1">
+						Derrota
+					</div>
 				</div>
-				<div class="bg-white/5 p-2 rounded">
-					<div class="text-blue-400 font-bold text-lg">+2</div>
-					<div>Ganar con Negras</div>
+				<div
+					class="bg-slate-800/50 p-3 rounded-lg border border-white/5"
+				>
+					<div class="text-blue-400 font-bold text-xl">+2</div>
+					<div class="uppercase tracking-wider text-[10px] mt-1">
+						Bonus Negras
+					</div>
 				</div>
 			</div>
-			<p class="mt-2 text-center text-xs text-gray-400">
+			<p class="mt-4 text-center text-xs text-slate-500 font-medium">
 				El Capitán (★) duplica todos sus puntos.
 			</p>
 		</section>
-	</div>
-</Modal>
-
-<!-- Market Event Modal -->
-<Modal
-	isOpen={!!marketEvent}
-	title={marketEvent?.title || ""}
-	onClose={() => (marketEvent = null)}
->
-	<div class="text-center">
-		<div class="text-5xl mb-4">
-			{#if marketEvent?.type === "error"}😱{:else}👀{/if}
-		</div>
-		<p class="text-gray-300 mb-6">{marketEvent?.message}</p>
-		<button
-			class="btn-primary w-full py-2"
-			onclick={() => (marketEvent = null)}
-		>
-			Entendido
-		</button>
 	</div>
 </Modal>

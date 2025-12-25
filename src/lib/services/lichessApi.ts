@@ -23,7 +23,9 @@ export interface Player {
     name: string;
     username: string;
     title?: string;
-    rating: number;
+    rating: number;      // Classical (main)
+    ratingRapid?: number; // New
+    ratingBlitz?: number; // New
     price: number;
     position: number;
     photoUrl: string;
@@ -77,9 +79,21 @@ class LichessApiService {
      * Get top classical chess players from Lichess
      */
     async getTopPlayers(count: number = 500): Promise<Player[]> {
-        // Check cache first
+        // 1. Check in-memory cache
         if (this.cache && Date.now() - this.cache.timestamp < CACHE_DURATION) {
             return this.cache.players.slice(0, count);
+        }
+
+        // 2. Check localStorage cache
+        if (typeof localStorage !== 'undefined') {
+            const storedCache = localStorage.getItem('gf_api_players_cache');
+            if (storedCache) {
+                const parsedCache = JSON.parse(storedCache) as CachedData;
+                if (Date.now() - parsedCache.timestamp < CACHE_DURATION) {
+                    this.cache = parsedCache; // Restore memory cache
+                    return parsedCache.players.slice(0, count);
+                }
+            }
         }
 
         try {
@@ -96,11 +110,15 @@ class LichessApiService {
             const data = await response.json();
             const players = this.transformPlayers(data.users || []);
 
-            // Cache the result
+            // 3. Update caches (memory + local)
             this.cache = {
                 players,
                 timestamp: Date.now()
             };
+
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('gf_api_players_cache', JSON.stringify(this.cache));
+            }
 
             return players;
         } catch (error) {
@@ -142,6 +160,8 @@ class LichessApiService {
                 name: fullName,
                 title: player.title,
                 rating,
+                ratingRapid: player.perfs?.rapid?.rating || 0,
+                ratingBlitz: player.perfs?.blitz?.rating || 0,
                 price: this.calculatePrice(rating, position),
                 position,
                 photoUrl: `https://lichess1.org/assets/logo/lichess-pad-${player.username}.png`,
@@ -188,21 +208,21 @@ class LichessApiService {
      */
     private getFallbackPlayers(): Player[] {
         return [
-            { id: 'magnuscarlsen', username: 'DrNykterstein', name: 'GM Magnus Carlsen', rating: 2830, price: 25000000, position: 1, photoUrl: '', country: 'NO' },
-            { id: 'fabianocaruana', username: 'FabianoCaruana', name: 'GM Fabiano Caruana', rating: 2805, price: 24000000, position: 2, photoUrl: '', country: 'US' },
-            { id: 'dingliren', username: 'DingLiren', name: 'GM Ding Liren', rating: 2780, price: 23000000, position: 3, photoUrl: '', country: 'CN' },
-            { id: 'iannepo', username: 'lachesisQ', name: 'GM Ian Nepomniachtchi', rating: 2770, price: 22000000, position: 4, photoUrl: '', country: 'RU' },
-            { id: 'hikarunakamura', username: 'Hikaru', name: 'GM Hikaru Nakamura', rating: 2765, price: 21000000, position: 5, photoUrl: '', country: 'US' },
-            { id: 'alirezafirouzja', username: 'Firouzja2003', name: 'GM Alireza Firouzja', rating: 2760, price: 20000000, position: 6, photoUrl: '', country: 'FR' },
-            { id: 'wesleyso', username: 'WesleySo', name: 'GM Wesley So', rating: 2755, price: 19000000, position: 7, photoUrl: '', country: 'US' },
-            { id: 'levonaronian', username: 'Levon', name: 'GM Levon Aronian', rating: 2750, price: 18000000, position: 8, photoUrl: '', country: 'US' },
-            { id: 'mvl', username: 'MVL', name: 'GM Maxime Vachier-Lagrave', rating: 2745, price: 17000000, position: 9, photoUrl: '', country: 'FR' },
-            { id: 'anishgiri', username: 'AnishGiri', name: 'GM Anish Giri', rating: 2740, price: 16000000, position: 10, photoUrl: '', country: 'NL' },
-            { id: 'vishy', username: 'Vishy', name: 'GM Viswanathan Anand', rating: 2735, price: 14000000, position: 11, photoUrl: '', country: 'IN' },
-            { id: 'shakhriyar', username: 'Shakhriyar', name: 'GM Shakhriyar Mamedyarov', rating: 2730, price: 13000000, position: 12, photoUrl: '', country: 'AZ' },
-            { id: 'teimour', username: 'Teimour', name: 'GM Teimour Radjabov', rating: 2725, price: 12000000, position: 13, photoUrl: '', country: 'AZ' },
-            { id: 'grischuk', username: 'Grischuk', name: 'GM Alexander Grischuk', rating: 2720, price: 11000000, position: 14, photoUrl: '', country: 'RU' },
-            { id: 'rapport', username: 'RichardRapport', name: 'GM Richard Rapport', rating: 2715, price: 10000000, position: 15, photoUrl: '', country: 'RO' }
+            { id: 'magnuscarlsen', username: 'DrNykterstein', name: 'GM Magnus Carlsen', rating: 2830, ratingRapid: 2820, ratingBlitz: 2890, price: 25000000, position: 1, photoUrl: '', country: 'NO' },
+            { id: 'fabianocaruana', username: 'FabianoCaruana', name: 'GM Fabiano Caruana', rating: 2805, ratingRapid: 2750, ratingBlitz: 2800, price: 24000000, position: 2, photoUrl: '', country: 'US' },
+            { id: 'dingliren', username: 'DingLiren', name: 'GM Ding Liren', rating: 2780, ratingRapid: 2740, ratingBlitz: 2790, price: 23000000, position: 3, photoUrl: '', country: 'CN' },
+            { id: 'iannepo', username: 'lachesisQ', name: 'GM Ian Nepomniachtchi', rating: 2770, ratingRapid: 2760, ratingBlitz: 2780, price: 22000000, position: 4, photoUrl: '', country: 'RU' },
+            { id: 'hikarunakamura', username: 'Hikaru', name: 'GM Hikaru Nakamura', rating: 2765, ratingRapid: 2750, ratingBlitz: 2900, price: 21000000, position: 5, photoUrl: '', country: 'US' },
+            { id: 'alirezafirouzja', username: 'Firouzja2003', name: 'GM Alireza Firouzja', rating: 2760, ratingRapid: 2730, ratingBlitz: 2880, price: 20000000, position: 6, photoUrl: '', country: 'FR' },
+            { id: 'wesleyso', username: 'WesleySo', name: 'GM Wesley So', rating: 2755, ratingRapid: 2760, ratingBlitz: 2770, price: 19000000, position: 7, photoUrl: '', country: 'US' },
+            { id: 'levonaronian', username: 'Levon', name: 'GM Levon Aronian', rating: 2750, ratingRapid: 2740, ratingBlitz: 2760, price: 18000000, position: 8, photoUrl: '', country: 'US' },
+            { id: 'mvl', username: 'MVL', name: 'GM Maxime Vachier-Lagrave', rating: 2745, ratingRapid: 2760, ratingBlitz: 2780, price: 17000000, position: 9, photoUrl: '', country: 'FR' },
+            { id: 'anishgiri', username: 'AnishGiri', name: 'GM Anish Giri', rating: 2740, ratingRapid: 2710, ratingBlitz: 2750, price: 16000000, position: 10, photoUrl: '', country: 'NL' },
+            { id: 'vishy', username: 'Vishy', name: 'GM Viswanathan Anand', rating: 2735, ratingRapid: 2750, ratingBlitz: 2730, price: 14000000, position: 11, photoUrl: '', country: 'IN' },
+            { id: 'shakhriyar', username: 'Shakhriyar', name: 'GM Shakhriyar Mamedyarov', rating: 2730, ratingRapid: 2720, ratingBlitz: 2740, price: 13000000, position: 12, photoUrl: '', country: 'AZ' },
+            { id: 'teimour', username: 'Teimour', name: 'GM Teimour Radjabov', rating: 2725, ratingRapid: 2710, ratingBlitz: 2720, price: 12000000, position: 13, photoUrl: '', country: 'AZ' },
+            { id: 'grischuk', username: 'Grischuk', name: 'GM Alexander Grischuk', rating: 2720, ratingRapid: 2730, ratingBlitz: 2750, price: 11000000, position: 14, photoUrl: '', country: 'RU' },
+            { id: 'rapport', username: 'RichardRapport', name: 'GM Richard Rapport', rating: 2715, ratingRapid: 2740, ratingBlitz: 2690, price: 10000000, position: 15, photoUrl: '', country: 'RO' }
         ];
     }
 

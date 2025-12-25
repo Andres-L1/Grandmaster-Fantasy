@@ -11,6 +11,7 @@ export interface User {
     username: string;
     budget: number;
     totalPoints: number;
+    seenOnboarding: boolean;
 }
 
 export interface Player {
@@ -28,14 +29,22 @@ export interface Player {
 const DEFAULT_USER: User = {
     username: 'Chess Fan',
     budget: 100000000, // 100M initial budget
-    totalPoints: 0
+    totalPoints: 0,
+    seenOnboarding: false
 };
 
 class LocalStorageService {
     // Get user data
     getUser(): User {
         const data = localStorage.getItem(STORAGE_KEYS.USER);
-        return data ? JSON.parse(data) : DEFAULT_USER;
+        if (data) {
+            const parsed = JSON.parse(data);
+            if (parsed.seenOnboarding === undefined) {
+                parsed.seenOnboarding = false;
+            }
+            return parsed;
+        }
+        return DEFAULT_USER;
     }
 
     // Save user data

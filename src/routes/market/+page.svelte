@@ -6,12 +6,17 @@
         playersLoading,
     } from "$lib/stores/players";
     import { user } from "$lib/stores/user";
+    import { toast } from "$lib/stores/toast";
     import type { Player } from "$lib/services/lichessApi";
+    import PlayerDetailModal from "$lib/components/PlayerDetailModal.svelte";
 
     let searchQuery = "";
     let sortBy: "position" | "price" | "name" = "position";
     let buyingPlayerId: string | null = null;
-    let message: { text: string; type: "success" | "error" } | null = null;
+
+    // Modal State
+    let showDetailModal = false;
+    let selectedPlayer: Player | null = null;
 
     $: filteredPlayers = $availablePlayers
         .filter(
@@ -31,16 +36,32 @@
 
     function buyPlayer(player: Player) {
         buyingPlayerId = player.id;
+        showDetailModal = false; // Close modal if open
 
         const result = ownedPlayerIds.buyPlayer(player.id, player.price);
 
-        message = {
-            text: result.message,
-            type: result.success ? "success" : "error",
-        };
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.message);
+        }
 
         buyingPlayerId = null;
-        setTimeout(() => (message = null), 3000);
+    }
+
+    function sellPlayer(player: Player) {
+        const result = ownedPlayerIds.sellPlayer(player.id);
+
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.message);
+        }
+    }
+
+    function openDetailModal(player: Player) {
+        selectedPlayer = player;
+        showDetailModal = true;
     }
 
     function formatPrice(price: number): string {
@@ -61,31 +82,11 @@
 <div class="space-y-6">
     <!-- Header -->
     <div>
-        <h1 class="text-3xl font-bold" style="color: rgb(227, 242, 253);">
-            Mercado de Jugadores
-        </h1>
-        <p class="text-sm mt-2" style="color: rgb(120, 144, 156);">
-            Ficha a jugadores del top 50 de ajedrez clásico de Lichess
+        <h1 class="text-3xl font-bold text-white mb-2">Mercado de Jugadores</h1>
+        <p class="text-sm text-slate-400">
+            Ficha a jugadores del top 500 de ajedrez clásico de Lichess
         </p>
     </div>
-
-    <!-- Message -->
-    {#if message}
-        <div
-            class="p-4 rounded-lg border {message.type === 'success'
-                ? 'bg-green-500/10 border-green-500/30'
-                : 'bg-red-500/10 border-red-500/30'}"
-            role="alert"
-        >
-            <span
-                style="color: {message.type === 'success'
-                    ? 'rgb(102, 187, 106)'
-                    : 'rgb(239, 83, 80)'};"
-            >
-                {message.text}
-            </span>
-        </div>
-    {/if}
 
     <!-- Search -->
     <div class="flex gap-4">
@@ -95,7 +96,7 @@
             bind:value={searchQuery}
             class="input flex-1"
         />
-        <select bind:value={sortBy} class="input">
+        <select bind:value={sortBy} class="input w-48 cursor-pointer">
             <option value="position">Por Ranking</option>
             <option value="price">Por Precio</option>
             <option value="name">Por Nombre</option>
@@ -104,80 +105,83 @@
 
     <!-- Loading State -->
     {#if $playersLoading}
-        <div class="text-center py-12">
-            <div class="text-4xl mb-4">♔</div>
-            <p style="color: rgb(176, 190, 197);">
+        <div class="text-center py-20">
+            <div class="text-6xl mb-6 mx-auto w-fit animate-pulse text-primary">
+                ♔
+            </div>
+            <p class="text-slate-400 text-lg">
                 Cargando jugadores desde Lichess...
             </p>
         </div>
     {:else}
         <!-- Table -->
-        <div
-            class="rounded-lg border overflow-hidden"
-            style="background: rgb(26, 35, 50); border-color: rgba(55, 71, 79, 0.3);"
-        >
+        <div class="card overflow-hidden">
             <table class="w-full">
-                <thead style="background: rgba(33, 45, 63, 0.5);">
+                <thead class="bg-slate-900/50 border-b border-white/5">
                     <tr>
                         <th
-                            class="px-4 py-3 text-left text-xs font-semibold"
-                            style="color: rgb(176, 190, 197);">#</th
+                            class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400"
+                            >#</th
                         >
                         <th
-                            class="px-4 py-3 text-left text-xs font-semibold"
-                            style="color: rgb(176, 190, 197);">Jugador</th
+                            class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400"
+                            >Jugador</th
                         >
                         <th
-                            class="px-4 py-3 text-left text-xs font-semibold"
-                            style="color: rgb(176, 190, 197);">Rating</th
+                            class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400"
+                            >Rating</th
                         >
                         <th
-                            class="px-4 py-3 text-left text-xs font-semibold"
-                            style="color: rgb(176, 190, 197);">Precio</th
+                            class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400"
+                            >Precio</th
                         >
                         <th
-                            class="px-4 py-3 text-right text-xs font-semibold"
-                            style="color: rgb(176, 190, 197);">Acción</th
+                            class="px-4 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-400"
+                            >Acción</th
                         >
                     </tr>
                 </thead>
-                <tbody
-                    class="divide-y"
-                    style="divide-color: rgba(55, 71, 79, 0.2);"
-                >
+                <tbody class="divide-y divide-white/5">
                     {#each filteredPlayers as player (player.id)}
-                        <tr class="hover:bg-white/5 transition">
+                        <tr
+                            class="hover:bg-white/5 transition-colors group cursor-pointer"
+                            on:click={() => openDetailModal(player)}
+                        >
                             <td
-                                class="px-4 py-3 text-sm"
-                                style="color: rgb(120, 144, 156);"
+                                class="px-4 py-3 text-sm text-slate-500 font-mono"
                                 >{player.position}</td
                             >
                             <td class="px-4 py-3">
-                                <div>
-                                    <div
-                                        class="font-medium"
-                                        style="color: rgb(227, 242, 253);"
-                                    >
-                                        {player.name}
-                                    </div>
-                                    <div
-                                        class="text-xs"
-                                        style="color: rgb(120, 144, 156);"
-                                    >
-                                        @{player.username}
+                                <div class="flex items-center gap-3">
+                                    <img
+                                        src={player.photoUrl ||
+                                            `https://ui-avatars.com/api/?name=${player.name}&background=random`}
+                                        alt={player.name}
+                                        class="w-10 h-10 rounded-full object-cover border border-white/10 group-hover:border-primary/50 transition-colors"
+                                        loading="lazy"
+                                    />
+                                    <div>
+                                        <div
+                                            class="font-medium text-white group-hover:text-primary transition-colors"
+                                        >
+                                            {player.name}
+                                        </div>
+                                        <div class="text-xs text-slate-500">
+                                            @{player.username}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-4 py-3">
                                 <span
-                                    class="font-mono font-semibold"
-                                    style="color: rgb(227, 242, 253);"
-                                    >{player.rating}</span
+                                    class="font-mono font-bold text-slate-300 bg-slate-800/50 px-2 py-1 rounded text-xs"
                                 >
+                                    {player.rating}
+                                </span>
                             </td>
                             <td class="px-4 py-3">
                                 <span
-                                    class="font-semibold"
+                                    class="font-bold"
                                     style="color: {getPriceColor(
                                         player.price,
                                         $user.budget,
@@ -189,23 +193,26 @@
                             <td class="px-4 py-3 text-right">
                                 {#if isOwned(player.id)}
                                     <span
-                                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
-                                        style="background: rgba(102, 187, 106, 0.1); color: rgb(102, 187, 106);"
+                                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-success/20 text-success border border-success/30"
                                     >
                                         ✓ Fichado
                                     </span>
                                 {:else}
                                     <button
-                                        on:click={() => buyPlayer(player)}
+                                        on:click|stopPropagation={() =>
+                                            buyPlayer(player)}
                                         disabled={buyingPlayerId ===
                                             player.id ||
                                             $user.budget < player.price}
-                                        class="btn-primary text-sm px-4 py-1.5"
+                                        class="btn-primary text-xs px-4 py-1.5 min-w-[90px] shadow-lg shadow-green-900/20"
                                     >
                                         {#if buyingPlayerId === player.id}
-                                            ...
+                                            <span
+                                                class="animate-spin inline-block"
+                                                >↻</span
+                                            >
                                         {:else if $user.budget < player.price}
-                                            Sin presupuesto
+                                            Sin saldo
                                         {:else}
                                             Fichar
                                         {/if}
@@ -219,11 +226,17 @@
         </div>
 
         {#if filteredPlayers.length === 0}
-            <div class="text-center py-12">
-                <p style="color: rgb(120, 144, 156);">
-                    No se encontraron jugadores
-                </p>
+            <div class="text-center py-20">
+                <p class="text-slate-500">No se encontraron jugadores</p>
             </div>
         {/if}
     {/if}
 </div>
+
+<PlayerDetailModal
+    bind:isOpen={showDetailModal}
+    player={selectedPlayer}
+    onClose={() => (showDetailModal = false)}
+    on:buy={(e) => buyPlayer(e.detail)}
+    on:sell={(e) => sellPlayer(e.detail)}
+/>

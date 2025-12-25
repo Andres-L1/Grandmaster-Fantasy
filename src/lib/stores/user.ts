@@ -9,7 +9,7 @@ if (browser) {
 
 // Create writable store for user data
 function createUserStore() {
-    const initialUser = browser ? storageService.getUser() : { username: 'Guest Player', budget: 100000000, totalPoints: 0 };
+    const initialUser: User = browser ? storageService.getUser() : { username: 'Guest Player', budget: 100000000, totalPoints: 0, seenOnboarding: false };
     const { subscribe, set, update } = writable<User>(initialUser);
 
     return {
@@ -35,8 +35,15 @@ function createUserStore() {
                 return newUser;
             });
         },
+        completeOnboarding: () => {
+            update(user => {
+                const newUser = { ...user, seenOnboarding: true };
+                if (browser) storageService.saveUser(newUser);
+                return newUser;
+            });
+        },
         reset: () => {
-            const defaultUser = { username: 'Guest Player', budget: 100000000, totalPoints: 0 };
+            const defaultUser = { username: 'Guest Player', budget: 100000000, totalPoints: 0, seenOnboarding: false };
             set(defaultUser);
             if (browser) storageService.saveUser(defaultUser);
         }

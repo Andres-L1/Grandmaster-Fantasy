@@ -6,9 +6,8 @@
         allPlayers,
     } from "$lib/stores/players";
     import type { OwnedPlayer } from "$lib/stores/players";
+    import { toast } from "$lib/stores/toast";
     import Modal from "$lib/components/Modal.svelte";
-
-    let message: { text: string; type: "success" | "error" } | null = null;
 
     // Clause Increase Modal State
     let showClauseModal = false;
@@ -38,21 +37,28 @@
                 selectedPlayer.id,
                 newClauseValue,
             );
-            showMessage(result.message, result.success ? "success" : "error");
+
             if (result.success) {
+                toast.success(result.message);
                 showClauseModal = false;
+            } else {
+                toast.error(result.message);
             }
         }
     }
 
     function addToTeam(playerId: string) {
         const result = currentTeam.addToTeam(playerId);
-        showMessage(result.message, result.success ? "success" : "error");
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.message);
+        }
     }
 
     function removeFromTeam(playerId: string) {
         currentTeam.removeFromTeam(playerId);
-        showMessage("Jugador eliminado del equipo", "success");
+        toast.success("Jugador eliminado del equipo");
     }
 
     function sellPlayer(player: OwnedPlayer) {
@@ -62,7 +68,11 @@
             )
         ) {
             const result = ownedPlayerIds.sellPlayer(player.id);
-            showMessage(result.message, result.success ? "success" : "error");
+            if (result.success) {
+                toast.success(result.message);
+            } else {
+                toast.error(result.message);
+            }
         }
     }
 
@@ -70,12 +80,11 @@
         const result = captain.setCaptain(
             $captain === playerId ? null : playerId,
         );
-        showMessage(result.message, result.success ? "success" : "error");
-    }
-
-    function showMessage(text: string, type: "success" | "error") {
-        message = { text, type };
-        setTimeout(() => (message = null), 3000);
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.message);
+        }
     }
 
     function formatPrice(price: number): string {
@@ -87,106 +96,100 @@
     <title>Mi Equipo - Grandmaster Fantasy</title>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="space-y-8">
     <!-- Header -->
     <div>
-        <h1 class="text-3xl font-bold" style="color: rgb(227, 242, 253);">
-            Mi Equipo
-        </h1>
-        <p class="text-sm mt-2" style="color: rgb(120, 144, 156);">
+        <h1 class="text-3xl font-bold font-serif text-white mb-2">Mi Equipo</h1>
+        <p class="text-sm text-slate-400">
             Gestiona tu plantilla, alineación y cláusulas de rescisión
         </p>
     </div>
 
-    <!-- Message -->
-    {#if message}
-        <div
-            class="p-4 rounded-lg border {message.type === 'success'
-                ? 'bg-green-500/10 border-green-500/30'
-                : 'bg-red-500/10 border-red-500/30'}"
-            role="alert"
-        >
-            <span
-                style="color: {message.type === 'success'
-                    ? 'rgb(102, 187, 106)'
-                    : 'rgb(239, 83, 80)'};"
-            >
-                {message.text}
-            </span>
-        </div>
-    {/if}
-
     <!-- Active Lineup -->
-    <div class="card">
-        <h2 class="text-xl font-bold mb-4" style="color: rgb(227, 242, 253);">
-            Alineación Activa ({$currentTeam.length}/3)
+    <div class="card p-6">
+        <h2
+            class="text-xl font-bold font-serif text-white mb-6 flex items-center gap-3"
+        >
+            <span class="text-2xl">♟</span> Alineación Activa
+            <span class="text-sm font-sans font-normal text-slate-400 ml-2"
+                >({$currentTeam.length}/3)</span
+            >
         </h2>
 
         {#if $teamPlayers.length === 0}
-            <div class="text-center py-12">
-                <div class="text-5xl mb-4">♔</div>
-                <p class="mb-2" style="color: rgb(176, 190, 197);">
+            <div
+                class="text-center py-16 border-2 border-dashed border-slate-700/50 rounded-xl bg-slate-900/30"
+            >
+                <div class="text-5xl mb-4 text-slate-600">♔</div>
+                <p class="mb-2 text-slate-400 font-medium">
                     Sin jugadores en la alineación
                 </p>
-                <p class="text-sm" style="color: rgb(120, 144, 156);">
-                    Añade jugadores desde tu roster
+                <p class="text-sm text-slate-500">
+                    Añade jugadores desde tu roster para empezar a puntuar
                 </p>
             </div>
         {:else}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {#each $teamPlayers as player (player.id)}
                     {@const clause =
                         $ownedPlayers.find((p) => p.id === player.id)?.clause ||
                         player.price}
-                    <div class="card relative group">
+                    <div
+                        class="relative group bg-slate-800/40 rounded-xl border border-white/5 p-4 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5"
+                    >
                         {#if $captain === player.id}
                             <div
-                                class="absolute top-2 right-2 px-2 py-1 rounded text-xs font-semibold z-10"
-                                style="background: rgba(255, 160, 0, 0.2); color: rgb(255, 160, 0);"
+                                class="absolute -top-2 -right-2 px-3 py-1 rounded-full text-xs font-bold z-10 shadow-lg bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 border border-yellow-400"
                             >
-                                ★ Capitán
+                                ★ CAPITÁN
                             </div>
                         {/if}
 
                         <div class="flex items-start gap-4 mb-4">
-                            <img
-                                src={player.photoUrl ||
-                                    `https://ui-avatars.com/api/?name=${player.name}&background=random`}
-                                alt={player.name}
-                                class="w-12 h-12 rounded-full object-cover border border-[rgba(255,255,255,0.1)]"
-                            />
-                            <div>
+                            <div class="relative">
+                                <img
+                                    src={player.photoUrl ||
+                                        `https://ui-avatars.com/api/?name=${player.name}&background=random`}
+                                    alt={player.name}
+                                    class="w-14 h-14 rounded-full object-cover border-2 border-white/10 group-hover:border-primary transition-colors"
+                                />
+                                <div
+                                    class="absolute -bottom-1 -right-1 bg-slate-900 text-[10px] font-bold px-1.5 py-0.5 rounded border border-white/10 text-slate-300"
+                                >
+                                    {player.rating}
+                                </div>
+                            </div>
+                            <div class="overflow-hidden">
                                 <h3
-                                    class="font-semibold text-white leading-tight"
+                                    class="font-bold text-white leading-tight truncate pr-2 group-hover:text-primary transition-colors"
                                 >
                                     {player.name}
                                 </h3>
-                                <div class="text-xs text-gray-400 mt-1">
+                                <div
+                                    class="text-xs text-slate-400 mt-1 truncate"
+                                >
                                     @{player.username}
-                                </div>
-                                <div class="text-xs text-gray-400">
-                                    Rating: {player.rating}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2 mb-4 text-sm">
+                        <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
                             <div
-                                class="bg-[rgba(255,255,255,0.05)] p-2 rounded"
+                                class="bg-slate-900/50 p-2.5 rounded-lg border border-white/5"
                             >
                                 <div
-                                    class="text-[10px] text-gray-500 uppercase"
+                                    class="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5"
                                 >
                                     Valor
                                 </div>
-                                <div class="text-white font-medium">
+                                <div class="text-white font-mono font-medium">
                                     {formatPrice(player.price)}
                                 </div>
                             </div>
 
                             <button
                                 type="button"
-                                class="bg-[rgba(255,160,0,0.1)] p-2 rounded cursor-pointer hover:bg-[rgba(255,160,0,0.2)] transition text-left"
+                                class="bg-amber-500/5 p-2.5 rounded-lg cursor-pointer hover:bg-amber-500/10 transition-colors text-left border border-amber-500/10 group/clause"
                                 onclick={() =>
                                     openClauseModal(
                                         $ownedPlayers.find(
@@ -195,12 +198,15 @@
                                     )}
                             >
                                 <div
-                                    class="text-[10px] text-amber-500/80 uppercase"
+                                    class="text-[10px] text-amber-500/70 uppercase tracking-wider mb-0.5"
                                 >
                                     Cláusula
                                 </div>
-                                <div class="text-amber-400 font-medium">
-                                    {formatPrice(clause)} ✎
+                                <div
+                                    class="text-amber-400 font-mono font-medium group-hover/clause:text-amber-300 transition-colors"
+                                >
+                                    {formatPrice(clause)}
+                                    <span class="text-xs">✎</span>
                                 </div>
                             </button>
                         </div>
@@ -208,8 +214,10 @@
                         <div class="flex gap-2">
                             <button
                                 onclick={() => setCaptainPlayer(player.id)}
-                                class="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition"
-                                style="background: rgba(255, 160, 0, 0.1); border: 1px solid rgba(255, 160, 0, 0.3); color: rgb(255, 160, 0);"
+                                class="flex-1 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all
+									{$captain === player.id
+                                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                    : 'bg-slate-700/50 text-slate-400 hover:bg-slate-700 hover:text-white border border-transparent'}"
                             >
                                 {$captain === player.id
                                     ? "Quitar C"
@@ -217,7 +225,7 @@
                             </button>
                             <button
                                 onclick={() => removeFromTeam(player.id)}
-                                class="flex-1 btn-danger text-sm"
+                                class="px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 border border-red-500/20 transition-colors"
                             >
                                 Banquillo
                             </button>
@@ -229,51 +237,67 @@
     </div>
 
     <!-- Roster -->
-    <div class="card mt-8">
-        <h2 class="text-xl font-bold mb-4" style="color: rgb(227, 242, 253);">
-            Banquillo / Roster ({$ownedPlayers.length}/15)
+    <div class="mt-12">
+        <h2
+            class="text-xl font-bold font-serif text-white mb-6 flex items-center gap-3 px-1"
+        >
+            <span class="text-2xl text-slate-500">👥</span> Banquillo
+            <span class="text-sm font-sans font-normal text-slate-400 ml-2"
+                >({$ownedPlayers.length}/15)</span
+            >
         </h2>
 
         {#if rosterPlayers.length === 0}
-            <div class="text-center py-8">
-                <p style="color: rgb(120, 144, 156);">
+            <div class="text-center py-12 bg-slate-900/30 rounded-xl">
+                <p class="text-slate-400 mb-4">
                     {$ownedPlayers.length === 0
-                        ? "No has fichado jugadores."
-                        : "Todos tus jugadores están en la alineación."}
+                        ? "No has fichado jugadores aún."
+                        : "Todos tus jugadores están en la alineación titular."}
                 </p>
                 {#if $ownedPlayers.length === 0}
                     <a
                         href="/Grandmaster-Fantasy/market"
-                        class="btn-primary inline-block mt-4">Ir al Mercado</a
+                        class="btn-primary inline-flex items-center gap-2"
                     >
+                        <span>+</span> Ir al Mercado
+                    </a>
                 {/if}
             </div>
         {:else}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {#each rosterPlayers as player (player.id)}
-                    <div class="card">
-                        <div class="flex justify-between items-start mb-2">
+                    <div
+                        class="bg-slate-900/50 rounded-lg p-4 border border-white/5 hover:border-white/10 transition-colors"
+                    >
+                        <div class="flex justify-between items-start mb-3">
                             <div>
-                                <h3 class="font-semibold text-white">
+                                <h3
+                                    class="font-bold text-white text-sm truncate max-w-[120px]"
+                                >
                                     {player.name}
                                 </h3>
-                                <div class="text-xs text-gray-400">
+                                <div
+                                    class="text-xs text-slate-500 truncate max-w-[120px]"
+                                >
                                     @{player.username}
                                 </div>
                             </div>
                             <div
-                                class="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400"
+                                class="text-xs bg-slate-800 px-2 py-1 rounded text-slate-300 border border-white/5 font-mono"
                             >
-                                Rating {player.rating}
+                                {player.rating}
                             </div>
                         </div>
 
                         <div
-                            class="flex justify-between items-center mb-4 text-sm"
+                            class="flex justify-between items-center mb-4 text-xs bg-slate-950/30 p-2 rounded"
                         >
-                            <span class="text-gray-400">Cláusula:</span>
+                            <span
+                                class="text-slate-500 uppercase tracking-wider"
+                                >Cláusula</span
+                            >
                             <button
-                                class="text-amber-400 font-medium hover:text-amber-300"
+                                class="text-amber-400 font-mono font-medium hover:text-amber-300 hover:underline"
                                 onclick={() => openClauseModal(player)}
                             >
                                 {formatPrice(player.clause)} ✎
@@ -284,13 +308,13 @@
                             <button
                                 onclick={() => addToTeam(player.id)}
                                 disabled={$currentTeam.length >= 3}
-                                class="flex-1 btn-primary text-sm"
+                                class="flex-1 bg-primary text-slate-900 font-bold text-xs py-2 rounded hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 Alinear
                             </button>
                             <button
                                 onclick={() => sellPlayer(player)}
-                                class="flex-1 btn-danger text-sm"
+                                class="px-3 bg-red-500/10 text-red-400 font-bold text-xs py-2 rounded border border-red-500/20 hover:bg-red-500/20 transition-all"
                             >
                                 Vender
                             </button>
@@ -309,60 +333,83 @@
     onClose={() => (showClauseModal = false)}
 >
     {#if selectedPlayer}
-        <div class="text-center mb-6">
-            <img
-                src={selectedPlayer.photoUrl ||
-                    `https://ui-avatars.com/api/?name=${selectedPlayer.name}`}
-                alt={selectedPlayer.name}
-                class="w-20 h-20 rounded-full mx-auto mb-3 border-2 border-amber-500/50"
-            />
-            <h3 class="text-xl font-bold text-white">{selectedPlayer.name}</h3>
-            <p class="text-gray-400">
-                Cláusula actual: <span class="text-white"
+        <div class="text-center mb-8">
+            <div class="relative inline-block mb-4">
+                <img
+                    src={selectedPlayer.photoUrl ||
+                        `https://ui-avatars.com/api/?name=${selectedPlayer.name}`}
+                    alt={selectedPlayer.name}
+                    class="w-24 h-24 rounded-full border-4 border-amber-500/20 shadow-xl"
+                />
+                <div
+                    class="absolute bottom-0 right-0 bg-slate-900 text-amber-500 text-lg p-1.5 rounded-full border border-amber-500/30"
+                >
+                    🛡️
+                </div>
+            </div>
+            <h3 class="text-2xl font-bold font-serif text-white">
+                {selectedPlayer.name}
+            </h3>
+            <p class="text-slate-400 mt-1">
+                Cláusula actual: <span class="text-white font-mono"
                     >{formatPrice(selectedPlayer.clause)}</span
                 >
             </p>
         </div>
 
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm text-gray-400 mb-2">
+        <div class="space-y-6">
+            <div class="bg-slate-800/50 p-6 rounded-xl border border-white/5">
+                <label
+                    for="clause-range"
+                    class="block text-sm font-medium text-slate-300 mb-4"
+                >
                     Nueva Cláusula (M)
+                </label>
+
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="font-mono text-slate-500 text-xs"
+                        >{formatPrice(selectedPlayer.price)}</span
+                    >
                     <input
+                        id="clause-range"
                         type="range"
                         min={selectedPlayer.price}
                         max={selectedPlayer.price * 5}
                         step={1000000}
                         bind:value={newClauseValue}
-                        class="w-full accent-amber-500 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer mt-2"
+                        class="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500 hover:accent-amber-400"
                     />
-                </label>
-                <div class="flex justify-between mt-2">
-                    <span class="text-amber-400 text-xl font-bold"
-                        >{formatPrice(newClauseValue)}</span
+                    <span class="font-mono text-slate-500 text-xs"
+                        >{formatPrice(selectedPlayer.price * 5)}</span
                     >
-                    <span class="text-xs text-gray-500"
-                        >Max: {formatPrice(selectedPlayer.price * 5)}</span
+                </div>
+
+                <div class="text-center">
+                    <span
+                        class="text-4xl font-bold font-mono text-amber-400 tracking-tight"
+                        >{formatPrice(newClauseValue)}</span
                     >
                 </div>
             </div>
 
-            <div class="bg-[rgba(0,0,0,0.3)] p-4 rounded-lg">
-                <div class="flex justify-between text-sm mb-1">
-                    <span class="text-gray-400">Coste de mejora (10%):</span>
-                    <span class="text-red-400 font-medium"
-                        >-{formatPrice(increaseCost)}</span
-                    >
-                </div>
-                <hr class="border-gray-700 my-2" />
-                <div class="text-xs text-gray-500 text-center">
-                    Aumentar la cláusula protege a tu jugador de ser robado por
-                    otros equipos.
-                </div>
+            <div
+                class="bg-slate-900/50 p-4 rounded-lg flex justify-between items-center text-sm border border-white/5"
+            >
+                <span class="text-slate-400">Coste de la operación (10%)</span>
+                <span
+                    class="font-bold font-mono {increaseCost > 0
+                        ? 'text-red-400'
+                        : 'text-slate-500'}">-{formatPrice(increaseCost)}</span
+                >
+            </div>
+
+            <div class="text-xs text-center text-slate-500 px-4">
+                Al blindar a este jugador, reduces la probabilidad de que otros
+                equipos paguen su cláusula.
             </div>
 
             <button
-                class="w-full btn-primary py-3 font-bold text-lg"
+                class="w-full btn-primary py-3.5 text-base shadow-lg shadow-amber-500/10"
                 disabled={increaseCost === 0}
                 onclick={confirmIncreaseClause}
             >
