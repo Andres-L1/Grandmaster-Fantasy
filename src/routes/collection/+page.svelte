@@ -62,11 +62,12 @@
         // Let's implement "Sell" = "Remove from collection + Gain Coins".
 
         // Calculate sell price based on rating (simplified)
-        // Legendary: 500, Epic: 100, Regular: 20
+        // Calculate sell price based on rarity
         let sellPrice = 20;
-        if (player.rating >= 2750) sellPrice = 500;
-        else if (player.rating >= 2650) sellPrice = 100;
-        else if (player.rating >= 2550) sellPrice = 50;
+        if (player.rating >= 2700) sellPrice = 1000;
+        else if (player.rating >= 2660) sellPrice = 500;
+        else if (player.rating >= 2655) sellPrice = 100;
+        else if (player.rating >= 2650) sellPrice = 50;
 
         if (
             confirm(
