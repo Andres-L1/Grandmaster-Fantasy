@@ -9,6 +9,7 @@
     import type { Player } from "$lib/data/players";
     import { toast } from "$lib/stores/toast";
     import Card from "$lib/components/Card.svelte";
+    import PackOpeningAnimation from "$lib/components/PackOpeningAnimation.svelte";
     import confetti from "canvas-confetti";
     import { onMount } from "svelte";
     import { storageService, type User } from "$lib/stores/localStorage";
@@ -21,6 +22,7 @@
     let duplicateSold = $state(false);
     let dailyPackAvailable = $state(false);
     let timeUntilNextDaily = $state("");
+    let currentPackType = $state<PackType>("PAWN");
 
     // Check daily pack availability
     function updateDailyPackStatus() {
@@ -57,13 +59,14 @@
 
         isOpening = true;
         isStarter = false;
+        currentPackType = "PAWN";
         toast.success("¡Sobre Diario Reclamado!");
 
         setTimeout(() => {
             const cards = packService.openPack("PAWN", $allPlayers);
             processOpenedCards(cards);
             updateDailyPackStatus();
-        }, 1000);
+        }, 500);
     }
 
     onMount(() => {
@@ -83,7 +86,8 @@
     function triggerStarterPack() {
         isStarter = true;
         isOpening = true;
-        duplicateSold = false; // Reset
+        duplicateSold = false;
+        currentPackType = "STARTER";
         // Small delay to let store load
         setTimeout(() => {
             const cards = packService.openPack("STARTER", $allPlayers);
@@ -106,13 +110,14 @@
         if (user.spendCoins(pack.price)) {
             isOpening = true;
             isStarter = false;
+            currentPackType = packType;
             toast.success(`¡Compraste un ${pack.name}!`);
 
             // Artificial delay for "opening" feel
             setTimeout(() => {
                 const cards = packService.openPack(packType, $allPlayers);
                 processOpenedCards(cards);
-            }, 1000); // 1s delay
+            }, 500);
         }
     }
 
@@ -121,17 +126,6 @@
             const { isNew } = collectionIds.addCard(card.id);
             return { card, isNew };
         });
-
-        // Check for legendary to trigger confetti (New threshold: 2660+)
-        const hasLegendary = cards.some((c) => c.rating >= 2660);
-        if (hasLegendary) {
-            confetti({
-                particleCount: 150,
-                spread: 100,
-                origin: { y: 0.6 },
-                colors: ["#FFD700", "#FFA500", "#FFFFFF"], // Gold colors
-            });
-        }
 
         isOpening = false;
         showResultModal = true;
@@ -286,78 +280,12 @@
 </div>
 
 {#if showResultModal}
-    <div
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md"
-    >
-        <div
-            class="w-full max-w-5xl space-y-8 animate-in fade-in zoom-in duration-300"
-        >
-            <h2 class="text-3xl font-bold text-white text-center">
-                {isStarter ? "¡Tu Primer Sobre!" : "¡Contenido del Sobre!"}
-            </h2>
-
-            <div
-                class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 justify-center"
-            >
-                {#each openedCards as { card, isNew }, i}
-                    <div
-                        class="animate-in slide-in-from-bottom-10 fade-in duration-500 relative group"
-                        style="animation-delay: {Math.random() * 200}ms"
-                    >
-                        <Card player={card} {isNew} onClick={() => {}} />
-                        {#if isStarter && !isNew}
-                            {#if !duplicateSold}
-                                <div
-                                    class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm z-20 animate-in fade-in"
-                                >
-                                    <span
-                                        class="text-amber-400 font-bold mb-3 text-lg drop-shadow-md"
-                                        >¡REPETIDA!</span
-                                    >
-                                    <button
-                                        class="bg-green-500 hover:bg-green-400 text-black font-black text-sm px-4 py-3 rounded-full shadow-lg shadow-green-500/20 transition-all hover:scale-105 active:scale-95"
-                                        onclick={() =>
-                                            sellStarterDuplicate(card)}
-                                    >
-                                        VENDER (+100 🪙)
-                                    </button>
-                                </div>
-                            {:else}
-                                <div
-                                    class="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl z-20"
-                                >
-                                    <span
-                                        class="text-green-400 font-bold text-xl"
-                                        >✅ VENDIDA</span
-                                    >
-                                </div>
-                            {/if}
-                        {/if}
-                    </div>
-                {/each}
-            </div>
-
-            <div class="flex justify-center pt-8">
-                <button
-                    class="bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-8 py-4 rounded-full text-lg shadow-xl shadow-amber-500/20 transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:grayscale"
-                    onclick={closeResult}
-                    disabled={isStarter && !duplicateSold}
-                >
-                    {isStarter && !duplicateSold
-                        ? "Vende la repetida para continuar"
-                        : "Continuar y Guardar"}
-                </button>
-            </div>
-
-            {#if isStarter}
-                <p
-                    class="text-center text-slate-400 text-sm max-w-lg mx-auto bg-slate-900/80 p-4 rounded-lg border border-white/5 mt-4"
-                >
-                    <strong>Tutorial:</strong> Has recibido cartas, pero una está
-                    repetida. ¡Véndela para conseguir tus primeras monedas! Sin monedas
-                    no puedes comprar sobres.
-                </p>
-            {/if}
-        </div>
-    </div>
+    <PackOpeningAnimation
+        cards={openedCards}
+        packType={currentPackType}
+        {isStarter}
+        onSellDuplicate={sellStarterDuplicate}
+        {duplicateSold}
+        onComplete={closeResult}
+    />
 {/if}
