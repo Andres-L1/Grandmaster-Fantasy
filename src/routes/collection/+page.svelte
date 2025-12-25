@@ -5,16 +5,23 @@
         playersLoading,
     } from "$lib/stores/players";
     import { user } from "$lib/stores/user";
+    import type { Player } from "$lib/data/players";
     import Card from "$lib/components/Card.svelte";
     import { onMount } from "svelte";
     import { toast } from "$lib/stores/toast";
+    import ConfirmModal from "$lib/components/ConfirmModal.svelte";
 
-    let showMissing = $state(true); // Default to showing placeholder for missing
-    let searchQuery = $state("");
-
-    // Pagination
+    // Pagination & filtering
     let currentPage = $state(1);
+    let searchQuery = $state("");
+    let showMissing = $state(true); // Show cards we don't have?
     const pageSize = 20;
+
+    // Sell modal state
+    let showSellModal = $state(false);
+    let playerToSell = $state<Player | null>(null);
+    let sellPrice = $state(0);
+    let isLastCopy = $state(false);
 
     // Derived filtered list
     let filteredPlayers = $derived.by(() => {
@@ -64,23 +71,35 @@
 
         // Check if this is the last copy
         const copies = $collectionIds.filter((id) => id === player.id).length;
-        const isLastCopy = copies === 1;
+        const copyStatus = copies === 1;
 
         // If it's the last copy, apply 75% penalty (25% of base price)
-        let finalPrice = isLastCopy ? Math.floor(basePrice * 0.25) : basePrice;
+        const price = copyStatus ? Math.floor(basePrice * 0.25) : basePrice;
 
-        const warningMsg = isLastCopy
-            ? `⚠️ ÚLTIMA CARTA: Solo recibirás ${finalPrice} monedas (25% del valor). ¿Seguro que quieres vender a ${player.name}?`
-            : `¿Vender a ${player.name} por ${finalPrice} monedas?`;
+        // Show modal
+        playerToSell = player;
+        sellPrice = price;
+        isLastCopy = copyStatus;
+        showSellModal = true;
+    }
 
-        if (confirm(warningMsg)) {
-            collectionIds.removeCard(player.id);
-            user.addCoins(finalPrice);
-            toast.success(`Vendido ${player.name} por ${finalPrice} monedas.`);
+    function confirmSell() {
+        if (playerToSell) {
+            collectionIds.removeCard(playerToSell.id);
+            user.addCoins(sellPrice);
+            toast.success(
+                `💰 Vendido ${playerToSell.name} por ${sellPrice} monedas!`,
+            );
+
+            // Reset
+            playerToSell = null;
+            sellPrice = 0;
+            isLastCopy = false;
         }
     }
 </script>
 
+```
 <svelte:head>
     <title>Colección - Grandmaster Legends</title>
 </svelte:head>
@@ -215,3 +234,16 @@
         </div>
     {/if}
 </div>
+
+<!-- Sell Confirmation Modal -->
+<ConfirmModal
+    bind:show={showSellModal}
+    type={isLastCopy ? "warning" : "confirm"}
+    title={isLastCopy ? "⚠️ ¡Última Carta!" : "💰 Vender Carta"}
+    message={isLastCopy
+        ? `Solo recibirás ${sellPrice} monedas (25% del valor) por ${playerToSell?.name}. ¿Estás seguro?`
+        : `¿Vender a ${playerToSell?.name} por ${sellPrice} monedas?`}
+    confirmText={`Vender por ${sellPrice} 🪙`}
+    cancelText="Cancelar"
+    onConfirm={confirmSell}
+/>
