@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String              @id @default(cuid())
+  username          String              @unique
+  email             String              @unique
+  totalPoints       Int                 @default(0)
+  budget            Int                 @default(100000000) // 100M inicial
+  createdAt         DateTime            @default(now())
+  teams             FantasyTeam[]
+  leagueMemberships LeagueMembership[]
+}
+
+model League {
+  id         String             @id @default(cuid())
+  name       String
+  isPrivate  Boolean            @default(false)
+  inviteCode String?            @unique
+  createdAt  DateTime           @default(now())
+  members    LeagueMembership[]
+}
+
+model LeagueMembership {
+  id       String @id @default(cuid())
+  user     User   @relation(fields: [userId], references: [id])
+  userId   String
+  league   League @relation(fields: [leagueId], references: [id])
+  leagueId String
+
+  @@unique([userId, leagueId])
+}
+
+model RealPlayer {
+  id            String        @id @default(cuid())
+  name          String
+  fideId        String        @unique
+  currentPrice  Int           @default(10000000) // 10M por defecto
+  basePrice     Int           @default(10000000)
+  positionRank  Int
+  photoUrl      String?
+  averagePoints Float         @default(0.0)
+  whiteMatches  MatchResult[] @relation("WhitePlayer")
+  blackMatches  MatchResult[] @relation("BlackPlayer")
+}
+
+model FantasyTeam {
+  id           String       @id @default(cuid())
+  user         User         @relation(fields: [userId], references: [id])
+  userId       String
+  tournament   Tournament   @relation(fields: [tournamentId], references: [id])
+  tournamentId String
+  captainId    String?
+  totalPoints  Int          @default(0)
+  createdAt    DateTime     @default(now())
+  players      TeamPlayer[]
+
+  @@unique([userId, tournamentId])
+}
+
+model TeamPlayer {
+  id       String      @id @default(cuid())
+  team     FantasyTeam @relation(fields: [teamId], references: [id])
+  teamId   String
+  playerId String
+
+  @@unique([teamId, playerId])
+}
+
+model Tournament {
+  id        String        @id @default(cuid())
+  name      String
+  lichessId String        @unique
+  status    String        @default("active") // active, finished
+  startDate DateTime
+  endDate   DateTime?
+  teams     FantasyTeam[]
+  matches   MatchResult[]
+}
+
+model MatchResult {
+  id            String     @id @default(cuid())
+  tournament    Tournament @relation(fields: [tournamentId], references: [id])
+  tournamentId  String
+  whitePlayer   RealPlayer @relation("WhitePlayer", fields: [whitePlayerId], references: [id])
+  whitePlayerId String
+  blackPlayer   RealPlayer @relation("BlackPlayer", fields: [blackPlayerId], references: [id])
+  blackPlayerId String
+  result        String // "1-0", "0-1", "1/2-1/2"
+  date          DateTime   @default(now())
+  processed     Boolean    @default(false)
+}
