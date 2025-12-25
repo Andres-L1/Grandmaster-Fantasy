@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { base } from "$app/paths";
 </script>
 
 <svelte:head>
@@ -20,13 +21,13 @@
         </p>
         <div class="flex gap-4 justify-center mt-8">
             <a
-                href="/market"
+                href="{base}/market"
                 class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition transform hover:scale-105"
             >
                 Explorar Mercado ♔
             </a>
             <a
-                href="/my-team"
+                href="{base}/my-team"
                 class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-8 py-4 rounded-lg font-semibold text-lg transition border border-white/20"
             >
                 Ver Mi Equipo
